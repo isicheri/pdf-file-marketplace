@@ -27,7 +27,7 @@ async createProduct({name,price,description}:CreateProductDto,fileurl: string,ow
          })
          return {success: true,data: product}
     } catch (error) {
-        throw new BadRequestException("something went wrong!",{cause: error})
+        throw new BadRequestException({error})
     }
 }
 

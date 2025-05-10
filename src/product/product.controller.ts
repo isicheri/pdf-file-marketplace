@@ -28,15 +28,18 @@ export class ProductController {
             ]
         })) file : Express.Multer.File
     ) {
+        if(!req.user?.id) {
+            throw new  BadRequestException("user not found");
+        }
+        if(req.user.role !== "SELLER") {
+            throw new  BadRequestException("User is not a seller");
+        }
         const filename = `${uuidV4()}-${file.originalname}`;
         const filePath = join(process.cwd(),"public","files",filename);
         writeFileSync(filePath,file.buffer)
         const protocol = req.protocol;
         const host = req.get("host")
         const fileUrl = `${protocol}://${host}/files/${filename}`; //storing in the database
-        if(!req.user?.id) {
-            throw new  BadRequestException("user not found")
-        }
        return await this.productService.createProduct(body,fileUrl,req.user?.id)
        
     }
