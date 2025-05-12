@@ -29,4 +29,9 @@ async updateUserRole({role,userId}:UpdateUserStatus) {
 }
 
 
+async deleteUserAccount() {}
+
+async getUserProducts() {}
+
+
 }

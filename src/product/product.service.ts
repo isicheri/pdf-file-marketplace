@@ -31,17 +31,25 @@ async createProduct({name,price,description}:CreateProductDto,fileurl: string,ow
     }
 }
 
-async searchProduct() {}
 
-async getProductById(productId: number) {
+async getProductById(productId: string) {
     try {
-        
+        const product = await this.prismaService.product.findFirst({where: {id: productId},include: {owner: true}})
+         return product;
     } catch (error) {
-        
+        throw new BadRequestException({error})
     }
 }
 
-
-async deleteProduct() {}
-
+async deleteProduct(productId:string,ownerId:string) {
+    try {
+        const findProduct = await this.prismaService.product.findFirst({where: {id: productId}});
+    if(!findProduct || findProduct.ownerId !== ownerId ) {
+        throw new BadRequestException("can perform the operation");
+    }
+    await this.prismaService.product.delete({where: {id: findProduct.id,ownerId: findProduct.ownerId}});
+    } catch (error) {
+        throw new BadRequestException({error})
+    }
+}
 }
