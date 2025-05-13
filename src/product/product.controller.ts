@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, FileTypeValidator, ForbiddenException, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { writeFileSync} from "fs"
 import { join } from 'path';
 import {v4 as uuidV4} from "uuid";
@@ -6,12 +6,14 @@ import { ProductService } from './product.service';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { CreateProductDto } from './dto/product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { PrismaService } from 'src/prismaServices/prisma.service';
 
 @Controller('product')
 export class ProductController {
     constructor(
-        private productService: ProductService
+        private productService: ProductService,
+        private prismaService:PrismaService
     ) {}
 
 
@@ -43,7 +45,62 @@ export class ProductController {
        return await this.productService.createProduct(body,fileUrl,req.user?.id)
        
     }
+    
+    @Get("/:productId")
+    @UseGuards(AuthGuard)
+    async getProductById(
+        @Param("productId") productId: string
+    ) {
+   return await this.productService.getProductById(productId);
+    }
 
+   @Delete("/:productId")
+   @UseGuards(AuthGuard)
+   async deleteProduct(
+    @Param("productId") productId: string,
+    @Req() req: Request,
+   ) {
+      const userId = req.user?.id!
+
+      return this.productService.deleteProduct(productId,userId);
+   }
+
+   @Get("/get-all")
+   @UseGuards(AuthGuard)
+   async getAllProducts() {
+    console.log("Ok-controller")
+    return await this.productService.getAllProduct();
+   }
+
+   @Get("/:productId/download")
+   @UseGuards(AuthGuard)
+   async downloadProduct(
+    @Param("productId") productId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+   ) {
+    const userId = req.user?.id!;
+    
+    const payment = await this.prismaService.payment.findFirst({
+        where: {
+            productId,
+            userId,
+           status: "SUCCESS"
+        }
+    })
+
+    if(!payment) {
+        throw new ForbiddenException("Access denied: no payment record");
+    }
+
+    const product = await this.prismaService.product.findUnique({where: {id: productId}});
+    
+    res.redirect(product?.fileUrl as unknown as string)
+   
+   }
 
 
 }
+
+// https://paystack.com/docs/?_gl=1*1ydofqp*_ga*MTQxODE0Mzg4MC4xNzQ3MDEwMDk1*_ga_JSPB6GMD3M*czE3NDcwOTEzMzUkbzMkZzEkdDE3NDcwOTI0MDAkajAkbDAkaDA.
+// https://dashboard.paystack.com/#/settings/developers

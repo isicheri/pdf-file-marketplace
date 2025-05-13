@@ -52,4 +52,19 @@ async deleteProduct(productId:string,ownerId:string) {
         throw new BadRequestException({error})
     }
 }
+
+async getAllProduct() {
+try {
+    console.log("OK")
+    const products = await this.prismaService.product.findMany({select: {owner: true,name:true, description: true,price: true}});
+if(!products) {
+    throw new Error("no product found")
+}
+console.log(products)
+return products;
+} catch (error) {
+   throw new BadRequestException({error}); 
+}
+}
+
 }

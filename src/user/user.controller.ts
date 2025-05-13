@@ -18,7 +18,7 @@ async updateRole(
 @Query("role",new UserRoleValidationPipe()) role: Role
 ) {
  const userId = request.user?.id!;
-return await this.userService.updateUserRole({role,userId})
+// return await this.userService.updateUserRole({role,userId})
 }
 
 

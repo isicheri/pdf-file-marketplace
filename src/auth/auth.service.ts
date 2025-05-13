@@ -27,8 +27,7 @@ export class AuthService {
         return {
           success: true,
           data: User
-        }
-        
+        }   
     } catch (error) {
         throw new BadRequestException(error,"someting went wrong");
     }  
