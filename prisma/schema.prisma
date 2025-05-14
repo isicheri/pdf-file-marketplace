@@ -52,9 +52,10 @@ model SellerAccount {
   id String @id @default(uuid())
   businessName String? @unique
   bankCode String?
-  accountNumber Int @unique
+  accountNumber String 
   percentage String? @default("10")
   verified Boolean @default(false)
+  sub_account String?
   sellerId String @unique
   user User @relation(fields: [sellerId], references: [id])
 }

@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "db:start": "docker run  --name nest-db -e POSTGRES_USER=nestuser -e POSTGRES_PASSWORD=nestpassword -e POSTGRES_DB=nestdb -p 5433:5432 -d postgres:16",
+    "db:start": "docker run --rm --name nest-db -e POSTGRES_USER=nestuser -e POSTGRES_PASSWORD=nestpassword -e POSTGRES_DB=nestdb -p 5433:5432 -d postgres:16",
     "db:stop": "docker stop postgres-db",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

@@ -19,9 +19,22 @@ businessName: string;
 @IsString()
 bankCode: string;
 
-@IsNumber()
+@IsString()
 @IsNotEmpty()
-accountNumber: number
+accountNumber: string
+
+}
 
 
+export class CreateUserAccountDto {
+@IsString()
+@IsNotEmpty()
+businessName: string;
+
+@IsString()
+bankCode: string;
+
+@IsString()
+@IsNotEmpty()
+accountNumber: string
 }

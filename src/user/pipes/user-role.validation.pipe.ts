@@ -11,7 +11,7 @@ export class UserRoleValidationPipe implements PipeTransform {
 
     private validateRole(value: any):boolean {
         let parsedVal = `${value}`
-        let roleArr = ["SELLER","BUYER"];
+        let roleArr = ["SELLER"];
         if(!roleArr.includes(parsedVal))
         {
             return false;

@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prismaServices/prisma.service';
-import { UpdateUserStatus } from './dto/user.dto';
+import { CreateUserAccountDto } from './dto/user.dto';
 import axios from "axios";
 import { Response } from 'express';
+import { Role } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
@@ -12,58 +13,32 @@ constructor(
 ) {}
 
 
-async updateUserRole({role,userId,accountNumber,bankCode,businessName}:UpdateUserStatus,response: Response) {
-    try { 
 
-
-      return this.prismaService.$transaction(async(tx) => {
-        const userAccount = await tx.sellerAccount.create({data: {
-            businessName,
-            accountNumber,
-            bankCode,
-            user: {
-                connect: {
-                    id: userId
-                }
-            }
-        }});
-
-    const findUserAccount = tx.user.findFirst({where: {id: userId},include: {
-        userAccount: true
-    }});
-
-    //put some if else statemen
-
-
-        const res = axios.post("https://api.paystack.co/subaccount",{
-            business_name: "",
-            bank_code: "",
-            account_number: "",
+async createSellerAccount({bankCode,businessName,accountNumber} :CreateUserAccountDto,userId:string,role:Role) {
+    try {
+const [userAccount,user] = await this.prismaService.$transaction([
+this.prismaService.sellerAccount.create({ data: {businessName,bankCode,accountNumber,user: {connect: {id: userId}}}}),
+this.prismaService.user.update({where: {id: userId},data: {role: role}})
+]) 
+ const res = await axios.post("https://api.paystack.co/subaccount",{
+            business_name: userAccount.businessName + "no_good",
+            bank_code: userAccount.bankCode,
+            account_number: userAccount.accountNumber,
             percentage_charge: parseInt(userAccount.percentage as string)
         },{
             headers: {
                 Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
             }
-        })
+        }) 
+        let subaccount = res.data.subaccount_code;
+    let account = await this.prismaService.sellerAccount.update({where: {id: userAccount.id},data: {sub_account: subaccount}})
 
-
-
-
-
-      })
-
-    //    const updatedUser = await this.prismaService.user.update({
-    //     where: {
-    //         id: userId
-    //     },
-    //     data: {
-    //         role: role
-    //     }
-    //    })
-    //    let user: Pick<typeof updatedUser, "id" | "role" | "username"> = {id: updatedUser.id, role: updatedUser.role, username: updatedUser.username}
-    //    return {success: true,data: {user}}
-        } catch (error) {
-        console.log(error);
+        return {
+            status: true,
+            message: res.data,
+            account: account
+        }
+    } catch (error) {
         throw new BadRequestException({error})
     }
 }
