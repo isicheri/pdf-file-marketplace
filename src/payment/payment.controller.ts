@@ -4,6 +4,7 @@ import { Response,Request } from 'express';
 import * as crypto from 'crypto';
 import { PaymentService } from './payment.service';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
+import { PaymentBody } from './dto/payment.dto';
 
 @Controller('payment')
 export class PaymentController {
@@ -15,11 +16,12 @@ export class PaymentController {
 @UseGuards(AuthGuard)
 async initiate(
 @Req() req:Request,
-@Body() buyerEmail: string,
+@Body() {buyerEmail}: PaymentBody,
 @Param("productId") productId: string
 ) {
 const userId = req.user?.id!;
-return await this.paymentService.initiatePayment(userId,productId,buyerEmail);
+return await this.paymentService.initiatePayment({userId,productId,buyerEmail});
+
 }
 
 

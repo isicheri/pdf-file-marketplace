@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import axios from "axios";
 import { v4 as uuidV4 } from 'uuid';
 import { PrismaService } from 'src/prismaServices/prisma.service';
+import { PaymentDto } from './dto/payment.dto';
 
 @Injectable()
 export class PaymentService {
@@ -9,13 +10,15 @@ constructor(
    private prismaService:PrismaService
 ) {}
 
-async initiatePayment(userId:string,productId: string,buyerEmail: string) {
+async initiatePayment({userId,productId,buyerEmail}:PaymentDto) {
 try {
     const product = await this.prismaService.product.findUnique({where: {id: productId}});
     if(!product) throw new BadRequestException("product not found");
     const reference =`txn_${uuidV4()}`;
-    const amount = parseFloat(product.price) * 100;
-    
+    const amount = parseFloat(product.price) * 10;
+
+    const owner = await this.prismaService.user.findFirst({where: {id:product.ownerId},include: {userAccount: true}})
+ const subaccount = owner?.userAccount?.sub_account;   
     await this.prismaService.payment.create({
         data: {
             reference,
@@ -23,12 +26,15 @@ try {
             productId
         }
     })
-
+    console.log({
+  email: buyerEmail ,
+  amount,
+  subaccount,
+});
     const response = await axios.post('https://api.paystack.co/transaction/initialize',{
-         email: buyerEmail, // Replace or fetch from user
+         email:buyerEmail, // Replace or fetch from user
          amount,
-         reference,
-         callback_url: 'http://localhost:3000/payments/verify',
+         subaccount
     },{
         headers: {
             Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
@@ -40,6 +46,8 @@ try {
    throw new BadRequestException({error}) 
 }    
 }
+
+
 
 
 async verifyPayment(reference: string) {

@@ -12,8 +12,6 @@ constructor(
     private prismaService:PrismaService
 ) {}
 
-
-
 async createSellerAccount({bankCode,businessName,accountNumber} :CreateUserAccountDto,userId:string,role:Role) {
     try {
 const [userAccount,user] = await this.prismaService.$transaction([
@@ -30,7 +28,7 @@ this.prismaService.user.update({where: {id: userId},data: {role: role}})
                 Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
             }
         }) 
-        let subaccount = res.data.subaccount_code;
+        let subaccount = res.data.data.subaccount_code;
     let account = await this.prismaService.sellerAccount.update({where: {id: userAccount.id},data: {sub_account: subaccount}})
 
         return {
