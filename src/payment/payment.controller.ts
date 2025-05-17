@@ -5,6 +5,8 @@ import * as crypto from 'crypto';
 import { PaymentService } from './payment.service';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
 import { PaymentBody, VerifyPaymentBody } from './dto/payment.dto';
+import { PaymentStatus } from 'generated/prisma';
+import { PaymentStatusValidatonPipe } from './pipes/payment-status-validation.pipes';
 
 @Controller('payment')
 export class PaymentController {
@@ -33,6 +35,15 @@ async verifyPayment(@Body() {reference}: VerifyPaymentBody,@Req() request: Reque
 }
 
 
+@Get("/get-user-payment")
+@UseGuards(AuthGuard)
+async getUserPayment(
+  @Req() request:Request,
+  @Query("status",new PaymentStatusValidatonPipe()) status: PaymentStatus
+) {
+const userId = request.user?.id!;
+return this.paymentService.getUserPaymentByStatus(userId,status)
+}
     
   // @Post('/webhook')
   // async handleWebhook(

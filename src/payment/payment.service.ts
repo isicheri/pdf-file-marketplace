@@ -3,6 +3,8 @@ import axios from "axios";
 import { v4 as uuidV4 } from 'uuid';
 import { PrismaService } from 'src/prismaServices/prisma.service';
 import { PaymentDto } from './dto/payment.dto';
+import {sign} from "jsonwebtoken"
+import { PaymentStatus } from 'generated/prisma';
 
 @Injectable()
 export class PaymentService {
@@ -44,7 +46,6 @@ try {
 }    
 }
 
-
 async verifyPayment(reference: string,buyerId: string) {
 try {
     const response = await axios.get(
@@ -63,11 +64,12 @@ try {
    
    const data = response.data;
     if (data.status && data.data.status === 'success') {
+      const token = sign({paymentId: findUser.payments[0].id,userId: findUser.id,productId: findUser.payments[0].productId},"secret",{expiresIn: "1hr"})
        const payment = await this.prismaService.payment.update({where: {id: findUser.payments[0].id,userId: findUser.id},data: {status: "SUCCESS"}})
         return {
           success: true,
           data: data.data,
-          download_link: `localhost:3000/product/${payment.id}/download`,
+          download_link: `localhost:3000/product/${payment.id}/${token}/download`,
         };
       } else {
        await this.prismaService.payment.update({where: {id: findUser.payments[0].id,userId: findUser.id},data: {status: "FAILED"}})
@@ -81,4 +83,16 @@ try {
     throw new BadRequestException({error})
 }
 }
+
+async getUserPaymentByStatus(userId: string,status:PaymentStatus) {
+  const payments = await this.prismaService.payment.findFirst({where: {
+    userId: userId,
+    status: status
+  }})  
+  return {
+    status: true,
+    data: payments
+  }
+}
+
 }

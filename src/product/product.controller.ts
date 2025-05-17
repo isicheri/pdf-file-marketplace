@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Delete, FileTypeValidator, ForbiddenException, Get, MaxFileSizeValidator, NotFoundException, Param, ParseFilePipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { access, writeFileSync} from "fs"
+import { access, createReadStream, existsSync, writeFileSync} from "fs"
 import { join } from 'path';
 import {v4 as uuidV4} from "uuid";
 import { ProductService } from './product.service';
@@ -10,14 +10,12 @@ import { Request, Response } from 'express';
 import { PrismaService } from 'src/prismaServices/prisma.service';
 import {verify} from "jsonwebtoken";
 
-
 @Controller('product')
 export class ProductController {
     constructor(
         private productService: ProductService,
         private prismaService:PrismaService
     ) {}
-
 
     @Post("/create")
     @UseGuards(AuthGuard)
@@ -106,10 +104,19 @@ export class ProductController {
         throw new NotFoundException("product not found")
     }
    
+    if (!existsSync(findProduct.filePath)) {
+      throw new NotFoundException('PDF not found');
+    }
+
+    let filesplit = findProduct.filePath.split("/");
+    let fn = filesplit[filesplit.length - 1];
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${fn}"`,
+    });
+
+    const stream =createReadStream(findProduct.filePath)
+    stream.pipe(res);
    }
-
-
 }
-
-// https://paystack.com/docs/?_gl=1*1ydofqp*_ga*MTQxODE0Mzg4MC4xNzQ3MDEwMDk1*_ga_JSPB6GMD3M*czE3NDcwOTEzMzUkbzMkZzEkdDE3NDcwOTI0MDAkajAkbDAkaDA.
-// https://dashboard.paystack.com/#/settings/developers

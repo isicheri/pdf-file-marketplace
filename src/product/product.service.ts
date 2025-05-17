@@ -1,14 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prismaServices/prisma.service';
 import { CreateProductDto } from './dto/product.dto';
+import {unlinkSync} from "fs";
 
 @Injectable()
 export class ProductService {
 constructor(
     private prismaService:PrismaService
 ) {}
-
-
 
 async createProduct({name,price,description}:CreateProductDto,fileurl: string,ownerId: string,filePath:string) {
     try {
@@ -32,7 +31,6 @@ async createProduct({name,price,description}:CreateProductDto,fileurl: string,ow
     }
 }
 
-
 async getProductById(productId: string) {
     try {
         const product = await this.prismaService.product.findFirst({where: {id: productId},include: {owner: true}})
@@ -42,12 +40,15 @@ async getProductById(productId: string) {
     }
 }
 
+//TODO: testing
+
 async deleteProduct(productId:string,ownerId:string) {
     try {
         const findProduct = await this.prismaService.product.findFirst({where: {id: productId}});
     if(!findProduct || findProduct.ownerId !== ownerId ) {
         throw new BadRequestException("can perform the operation");
     }
+    unlinkSync(findProduct.filePath)
     await this.prismaService.product.delete({where: {id: findProduct.id,ownerId: findProduct.ownerId}});
     } catch (error) {
         throw new BadRequestException({error})
