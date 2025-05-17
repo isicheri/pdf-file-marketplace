@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Delete, FileTypeValidator, ForbiddenException, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { writeFileSync} from "fs"
+import { BadRequestException, Body, Controller, Delete, FileTypeValidator, ForbiddenException, Get, MaxFileSizeValidator, NotFoundException, Param, ParseFilePipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { access, writeFileSync} from "fs"
 import { join } from 'path';
 import {v4 as uuidV4} from "uuid";
 import { ProductService } from './product.service';
@@ -8,6 +8,8 @@ import { CreateProductDto } from './dto/product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { PrismaService } from 'src/prismaServices/prisma.service';
+import {verify} from "jsonwebtoken";
+
 
 @Controller('product')
 export class ProductController {
@@ -42,7 +44,7 @@ export class ProductController {
         const protocol = req.protocol;
         const host = req.get("host")
         const fileUrl = `${protocol}://${host}/files/${filename}`; //storing in the database
-       return await this.productService.createProduct(body,fileUrl,req.user?.id)
+       return await this.productService.createProduct(body,fileUrl,req.user?.id,filePath)
        
     }
     
@@ -72,30 +74,37 @@ export class ProductController {
     return await this.productService.getAllProduct();
    }
 
-   @Get("/:productId/download")
+   @Get("/:paymentId/:accessToken/download")
    @UseGuards(AuthGuard)
    async downloadProduct(
-    @Param("productId") productId: string,
+    @Param("paymentId") paymentId: string,
+    @Param("accessToken") accessToken: string,
     @Req() req: Request,
     @Res() res: Response,
    ) {
     const userId = req.user?.id!;
-    
     const payment = await this.prismaService.payment.findFirst({
         where: {
-            productId,
+            id: paymentId,
             userId,
-           status: "SUCCESS"
+            status: "SUCCESS"
         }
     })
-
     if(!payment) {
         throw new ForbiddenException("Access denied: no payment record");
     }
+    try {
+     verify(accessToken,"secret");    
+    } catch (error) {
+        res.send("<h1>Access Denied</h1>")
+        throw new BadRequestException("access to this route as been restricted")
+    }
 
-    const product = await this.prismaService.product.findUnique({where: {id: productId}});
-    
-    res.redirect(product?.fileUrl as unknown as string)
+    const findProduct = await this.prismaService.product.findFirst({where: {id: payment.productId}})
+
+    if(!findProduct) {
+        throw new NotFoundException("product not found")
+    }
    
    }
 

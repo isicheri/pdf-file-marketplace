@@ -10,7 +10,7 @@ constructor(
 
 
 
-async createProduct({name,price,description}:CreateProductDto,fileurl: string,ownerId: string) {
+async createProduct({name,price,description}:CreateProductDto,fileurl: string,ownerId: string,filePath:string) {
     try {
         const findUser = await this.prismaService.user.findFirst({where: {id:ownerId}})
         if(findUser?.role === "BUYER" || !findUser) {
@@ -22,7 +22,8 @@ async createProduct({name,price,description}:CreateProductDto,fileurl: string,ow
                 price: price,
                 description: description,
                 fileUrl: fileurl,
-                ownerId: findUser?.id
+                ownerId: findUser?.id,
+                filePath: filePath
             }
          })
          return {success: true,data: product}

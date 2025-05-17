@@ -30,6 +30,7 @@ model Product {
   id String @id @default(uuid())
   name String @unique
   fileUrl String
+  filePath String
   description String
   price String
   ownerId String

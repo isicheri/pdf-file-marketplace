@@ -26,13 +26,9 @@ try {
             productId
         }
     })
-    console.log({
-  email: buyerEmail ,
-  amount,
-  subaccount,
-});
+    console.log({email: buyerEmail,amount,subaccount});
     const response = await axios.post('https://api.paystack.co/transaction/initialize',{
-         email:buyerEmail, // Replace or fetch from user
+         email:buyerEmail,
          amount,
          subaccount
     },{
@@ -40,17 +36,16 @@ try {
             Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
         }
     })
-
-    return response.data
+    return {
+       data: response.data,
+    }
 } catch (error) {
    throw new BadRequestException({error}) 
 }    
 }
 
 
-
-
-async verifyPayment(reference: string) {
+async verifyPayment(reference: string,buyerId: string) {
 try {
     const response = await axios.get(
         `https://api.paystack.co/transaction/verify/${reference}`,
@@ -60,13 +55,22 @@ try {
           },
         },
       );
+   const findUser = await this.prismaService.user.findFirst({where: {id: buyerId},include: {
+    payments: true
+   }});  
+   
+   if(!findUser) throw new BadRequestException("user not found");
+   
    const data = response.data;
     if (data.status && data.data.status === 'success') {
+       const payment = await this.prismaService.payment.update({where: {id: findUser.payments[0].id,userId: findUser.id},data: {status: "SUCCESS"}})
         return {
           success: true,
           data: data.data,
+          download_link: `localhost:3000/product/${payment.id}/download`,
         };
       } else {
+       await this.prismaService.payment.update({where: {id: findUser.payments[0].id,userId: findUser.id},data: {status: "FAILED"}})
         return {
           success: false,
           message: 'Transaction not successful',
@@ -78,4 +82,3 @@ try {
 }
 }
 }
-

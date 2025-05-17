@@ -4,7 +4,7 @@ import { Response,Request } from 'express';
 import * as crypto from 'crypto';
 import { PaymentService } from './payment.service';
 import { AuthGuard } from 'src/auth/guards/auth.guards';
-import { PaymentBody } from './dto/payment.dto';
+import { PaymentBody, VerifyPaymentBody } from './dto/payment.dto';
 
 @Controller('payment')
 export class PaymentController {
@@ -25,44 +25,46 @@ return await this.paymentService.initiatePayment({userId,productId,buyerEmail});
 }
 
 
-@Get('verify')
-async verifyPayment(@Body() reference: string) {
-  return this.paymentService.verifyPayment(reference);
+@Post('/verify')
+@UseGuards(AuthGuard)
+async verifyPayment(@Body() {reference}: VerifyPaymentBody,@Req() request: Request) {
+  const userId = request.user?.id!;
+  return this.paymentService.verifyPayment(reference,userId);
 }
 
 
     
-  @Post('/webhook')
-  async handleWebhook(
-    @Headers('x-paystack-signature') signature: string,
-    @Body() payload: any,
-    @Res() res: Response
-  ) {
-    const hash = crypto
-      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY as string)
-      .update(JSON.stringify(payload))
-      .digest('hex');
+  // @Post('/webhook')
+  // async handleWebhook(
+  //   @Headers('x-paystack-signature') signature: string,
+  //   @Body() payload: any,
+  //   @Res() res: Response
+  // ) {
+  //   const hash = crypto
+  //     .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY as string)
+  //     .update(JSON.stringify(payload))
+  //     .digest('hex');
 
-    if (hash !== signature) {
-      return res.status(400).send('Invalid signature');
-    }
+  //   if (hash !== signature) {
+  //     return res.status(400).send('Invalid signature');
+  //   }
 
-    const event = payload.event;
-    const reference = payload.data.reference;
+  //   const event = payload.event;
+  //   const reference = payload.data.reference;
 
-    if (event === 'charge.success') {
-      await this.prismaService.payment.update({
-        where: { reference },
-        data: { status: 'SUCCESS' },
-      });
-    } else {
-      await this.prismaService.payment.update({
-        where: { reference },
-        data: { status: 'FAILED' },
-      });
-    }
-    return res.sendStatus(200);
-  }
+  //   if (event === 'charge.success') {
+  //     await this.prismaService.payment.update({
+  //       where: { reference },
+  //       data: { status: 'SUCCESS' },
+  //     });
+  //   } else {
+  //     await this.prismaService.payment.update({
+  //       where: { reference },
+  //       data: { status: 'FAILED' },
+  //     });
+  //   }
+  //   return res.sendStatus(200);
+  // }
 
 }
 

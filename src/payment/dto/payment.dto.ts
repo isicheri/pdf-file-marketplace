@@ -23,3 +23,9 @@ export class PaymentBody{
     @IsNotEmpty()
     buyerEmail: string
 }
+
+export class VerifyPaymentBody {
+    @IsString()
+    @IsNotEmpty()
+    reference: string
+}
